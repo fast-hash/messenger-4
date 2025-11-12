@@ -11,6 +11,13 @@ const OBJECT_ID_RE = /^[a-f\d]{24}$/i;
 
 const noop = (_req, _res, next) => next();
 
+const toSingle = (value) => {
+  if (Array.isArray(value)) {
+    return value[0];
+  }
+  return value ?? null;
+};
+
 function isCanonicalBase64(value) {
   if (typeof value !== 'string') {
     return false;
@@ -131,26 +138,25 @@ export default function messagesRouter({ auth, onMessage } = {}) {
     return `${createdAt.toISOString()}|${id}`;
   }
 
-  router.get('/:chatId', guard, async (req, res, next) => {
+  async function listMessages(req, res, next, { chatId, limitRaw, cursorRaw }) {
     try {
-      const { chatId } = req.params;
       if (typeof chatId !== 'string' || !OBJECT_ID_RE.test(chatId)) {
         return res.status(422).json({ error: 'invalid chatId' });
       }
 
-      const rawLimit = req.query?.limit;
+      const limitCandidate = limitRaw ?? 50;
       const limit =
-        rawLimit === undefined || rawLimit === ''
+        limitCandidate === undefined || limitCandidate === ''
           ? 50
-          : Number.parseInt(Array.isArray(rawLimit) ? rawLimit[0] : rawLimit, 10);
+          : Number.parseInt(limitCandidate, 10);
       if (!Number.isInteger(limit) || limit < 1 || limit > 200) {
         return res.status(400).json({ error: 'invalid limit' });
       }
 
       let cursor;
       try {
-        const rawCursor = req.query?.cursor;
-        cursor = parseCursor(Array.isArray(rawCursor) ? rawCursor[0] : rawCursor);
+        const rawCursor = cursorRaw ?? null;
+        cursor = rawCursor ? parseCursor(rawCursor) : null;
       } catch {
         return res.status(400).json({ error: 'invalid cursor' });
       }
@@ -203,6 +209,24 @@ export default function messagesRouter({ auth, onMessage } = {}) {
     } catch (err) {
       next(err);
     }
+  }
+
+  router.get('/', guard, (req, res, next) => {
+    const query = req.query || {};
+    const chatId = toSingle(query.chatId);
+    if (!chatId) {
+      return res.status(400).json({ error: 'chatId_required' });
+    }
+    const limitRaw = toSingle(query.limit);
+    const cursorRaw = toSingle(query.cursor ?? query.page);
+    return listMessages(req, res, next, { chatId, limitRaw, cursorRaw });
+  });
+
+  router.get('/:chatId', guard, (req, res, next) => {
+    const query = req.query || {};
+    const limitRaw = toSingle(query.limit);
+    const cursorRaw = toSingle(query.cursor ?? query.page);
+    return listMessages(req, res, next, { chatId: req.params.chatId, limitRaw, cursorRaw });
   });
 
   return router;

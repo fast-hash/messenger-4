@@ -24,6 +24,7 @@ export async function history(chatId, options = {}) {
     throw new TypeError('chatId must be a string');
   }
   const params = new URLSearchParams();
+  params.set('chatId', chatId);
   if (options.limit != null) {
     const limit = Number.parseInt(options.limit, 10);
     if (!Number.isInteger(limit) || limit < 1) {
@@ -33,10 +34,11 @@ export async function history(chatId, options = {}) {
   }
   if (options.cursor) {
     params.set('cursor', options.cursor);
+    params.set('page', options.cursor);
   }
 
   const suffix = params.toString();
-  const payload = await request(`/api/messages/${chatId}${suffix ? `?${suffix}` : ''}`);
+  const payload = await request(`/api/messages${suffix ? `?${suffix}` : ''}`);
 
   const records = Array.isArray(payload?.messages)
     ? payload.messages
