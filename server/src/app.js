@@ -164,16 +164,16 @@ export function createApp({
   }
 
   if (process.env.NODE_ENV === 'test') {
-    void import('./test/bootstrap.routes.js').then((mod) => {
-      const bootstrap = mod.default ?? mod.mountTestBootstrap;
-      const register = mod.register;
-      if (typeof bootstrap === 'function') {
-        bootstrap(app);
+    (async () => {
+      try {
+        const { default: registerTestRoutes } = await import('./test/bootstrap.routes.js');
+        if (typeof registerTestRoutes === 'function') {
+          registerTestRoutes(app);
+        }
+      } catch (err) {
+        logger.error?.('test_bootstrap_registration_failed', err);
       }
-      if (typeof register === 'function') {
-        register(app);
-      }
-    });
+    })();
   }
 
   app.get('/', (_req, res) => {

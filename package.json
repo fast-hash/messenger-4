@@ -1,6 +1,7 @@
 {
-  "name": "messenger-monorepo",
+  "name": "messenger-3",
   "private": true,
+  "packageManager": "pnpm@10.21.0",
   "workspaces": [
     "client",
     "server"
@@ -29,7 +30,13 @@
     "secrets:install": "git secrets --install && git secrets --register-aws",
     "secrets:scan": "git secrets --scan",
     "slides:dev": "marp -ps slides/deck.md -o slides/deck.html",
-    "slides:pdf": "marp slides/deck.md -o slides/deck.pdf"
+    "slides:pdf": "marp slides/deck.md -o slides/deck.pdf",
+    "workspace:install": "pnpm -w install",
+    "workspace:build": "pnpm -r --if-present run build",
+    "workspace:dev": "pnpm -r --if-present run dev",
+    "workspace:test": "pnpm -r --if-present run test",
+    "workspace:lint": "pnpm -r --if-present run lint",
+    "workspace:format": "pnpm -r --if-present run format"
   },
   "dependencies": {
     "jsonwebtoken": "^9.0.2"
