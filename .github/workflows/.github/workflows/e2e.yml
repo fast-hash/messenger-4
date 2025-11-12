@@ -1,0 +1,42 @@
+name: E2E
+on:
+  workflow_dispatch:
+  push: { branches: [main] }
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    services:
+      mongo:
+        image: mongo:7
+        ports: ['27017:27017']
+      redis:
+        image: redis:7
+        ports: ['6379:6379']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20', cache: 'pnpm' }
+      - run: npm i -g pnpm@9
+      - run: pnpm install --frozen-lockfile
+      # Устанавливает браузеры и системные либы (исправит твою ошибку из логов)
+      - uses: microsoft/playwright-github-action@v1
+      - name: Start server (prod-like, но без NODE_ENV=production)
+        env:
+          MONGO_URL: mongodb://localhost:27017/testdb
+          REDIS_URL: redis://localhost:6379
+          VERIFY_MODE: '1'
+        run: |
+          node server/index.js & echo $! > server.pid
+          # если фронт отдельный dev-server — подними его тут же
+          # npm -w client run dev & echo $! > client.pid
+          sleep 2
+      - name: Run Playwright tests
+        env:
+          E2E_BASE_URL: http://127.0.0.1:3000
+          E2E_API_URL: http://127.0.0.1:3000
+        run: pnpm -w run e2e
+      - name: Stop
+        if: always()
+        run: |
+          kill $(cat server.pid) || true

@@ -1,0 +1,18 @@
+config:
+  target: "http://127.0.0.1:3000"
+  phases:
+    - duration: 300
+      arrivalRate: 5
+      rampTo: 40
+  http: { pool: 50, timeout: 10 }
+  defaults: { headers: { content-type: application/json } }
+  processor: "./processors.js"
+scenarios:
+  - name: Ciphertext post
+    flow:
+      - function: seedIfNeeded
+      - function: genCipher
+      - post:
+          url: "/api/messages/{{ chatId }}"
+          json: { encryptedPayload: "{{ b64 }}" }
+      - think: 1

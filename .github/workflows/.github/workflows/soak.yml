@@ -1,0 +1,19 @@
+name: Soak
+on: [workflow_dispatch]
+jobs:
+  soak:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      - run: npm i -g pnpm@9 artillery@2
+      - run: pnpm install --frozen-lockfile
+      - name: Start server (verify mode)
+        run: VERIFY_MODE=1 node server/index.js & echo $! > server.pid; sleep 2
+      - name: Run soak (5 min)
+        run: npx artillery run load/soak.yml | tee soak.log
+      - uses: actions/upload-artifact@v4
+        with: { name: soak-report, path: soak.log }
+      - if: always()
+        run: kill $(cat server.pid) || true

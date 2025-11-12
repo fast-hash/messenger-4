@@ -1,0 +1,18 @@
+config:
+  target: 'http://localhost:8080'
+  phases:
+    - duration: 60
+      arrivalRate: 20
+  processor: './payload.js'
+  defaults:
+    headers:
+      Authorization: 'Bearer {{ $env.ART_TOKEN }}'
+scenarios:
+  - name: send-ciphertext
+    flow:
+      - function: 'generateCiphertext'
+      - post:
+          url: '/api/messages'
+          json:
+            chatId: '{{ $env.ART_CHAT_ID }}'
+            encryptedPayload: '{{ cipher }}'

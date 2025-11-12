@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.vite/
+coverage/
+artifacts/
+client/dist/
+server/dist/
+client/src/crypto/libsignal-protocol/
+test/crypto/wycheproof.test.mjs
+docs/api/openapi.yaml
+docs/CRYPTO-DESIGN.md
+slides/deck.md

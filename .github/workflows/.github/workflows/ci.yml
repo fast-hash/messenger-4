@@ -1,0 +1,113 @@
+name: CI
+on:
+  push: { branches: [main] }
+  pull_request: { branches: [main] }
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20', cache: 'pnpm' }
+      - run: npm i -g pnpm@9
+      - run: pnpm install --frozen-lockfile
+      - name: Lint
+        run: pnpm -w run lint || true
+      - name: Typecheck
+        run: pnpm -w run typecheck || true
+      - name: Server unit+integration
+        run: cd server && node --test test
+      - name: Client unit
+        run: cd client && node --test test
+  lint-crypto-strict:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20', cache: 'pnpm' }
+      - run: npm i -g pnpm@9
+      - run: pnpm install --frozen-lockfile
+      - name: ESLint (crypto)
+        run: pnpm dlx eslint@8.57.0 --config .eslintrc.cjs "client/src/crypto/**" --max-warnings=0
+  crypto:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        suite: [crypto]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20', cache: 'pnpm' }
+      - run: npm i -g pnpm@9
+      - run: pnpm install --frozen-lockfile
+      - name: Wycheproof + Double Ratchet tests
+        run: pnpm -w run test:crypto
+  coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20', cache: 'pnpm' }
+      - run: npm i -g pnpm@9
+      - run: pnpm install --frozen-lockfile
+      - name: Server coverage
+        run: pnpm run test:server:cov && mkdir -p coverage-artifacts && cp coverage/lcov.info coverage-artifacts/server.lcov.info
+      - name: Client coverage
+        run: pnpm run test:client:cov && mkdir -p coverage-artifacts && cp coverage/lcov.info coverage-artifacts/client.lcov.info
+      - uses: actions/upload-artifact@v4
+        with: { name: coverage-server, path: coverage-artifacts/server.lcov.info }
+      - uses: actions/upload-artifact@v4
+        with: { name: coverage-client, path: coverage-artifacts/client.lcov.info }
+  api-checks:
+    runs-on: ubuntu-latest
+    needs: [build-test]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20', cache: 'pnpm' }
+      - run: npm i -g pnpm@9
+      - run: pnpm install --frozen-lockfile
+      - name: Run API checks
+        run: bash scripts/api-checks.sh
+      - name: Upload API check log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-checks
+          path: artifacts/api-checks.log
+  sbom:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm i -g pnpm@9 @cyclonedx/cyclonedx-npm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run sbom
+      - uses: actions/upload-artifact@v4
+        with: { name: sbom, path: sbom.json }
+  openapi:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          if [ -f docs/openapi.yaml ]; then
+            npx @redocly/cli@latest lint docs/openapi.yaml
+          else
+            echo "No docs/openapi.yaml - skip lint"
+          fi
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20', cache: 'pnpm' }
+      - run: npm i -g pnpm@9
+      - run: pnpm install --frozen-lockfile
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps
+      - name: Start server in verify mode
+        run: VERIFY_MODE=1 node server/index.js & echo $! > server.pid; sleep 2
+      - name: Run e2e
+        run: pnpm -w -C client run e2e
+      - if: always()
+        run: kill $(cat server.pid) || true

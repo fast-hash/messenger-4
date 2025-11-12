@@ -1,0 +1,81 @@
+openapi: 3.1.0
+info:
+  title: Corporate Messenger API
+  version: 1.0.0
+servers:
+  - url: https://localhost:3000
+paths:
+  /api/auth/login:
+    post:
+      summary: Password login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, password]
+              properties:
+                username: { type: string, minLength: 1 }
+                password: { type: string, minLength: 1 }
+      responses:
+        "200":
+          description: OK
+          headers:
+            Set-Cookie:
+              description: HttpOnly Secure SameSite=Strict refresh cookie
+              schema: { type: string }
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accessToken: { type: string }
+  /api/auth/refresh:
+    post:
+      summary: Rotate access token
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accessToken: { type: string }
+  /api/messages/{chatId}:
+    post:
+      summary: Send ciphertext
+      parameters:
+        - name: chatId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [encryptedPayload]
+              properties:
+                encryptedPayload:
+                  type: string
+                  description: base64 ciphertext (AES-GCM)
+                  minLength: 24
+    get:
+      summary: History page
+      parameters:
+        - name: chatId
+          in: path
+          required: true
+          schema: { type: string }
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 200, default: 50 }
+        - name: cursor
+          in: query
+          schema: { type: string }
+      responses:
+        "200":
+          description: Page of ciphertexts

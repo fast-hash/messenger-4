@@ -1,0 +1,11 @@
+{
+  "env": "development",
+  "server": {
+    "port": 3000,
+    "jsonLimit": "256kb",
+    "cors": { "origins": ["http://localhost:5173"] }
+  },
+  "mongo": { "uri": "mongodb://127.0.0.1:27017/secure_messenger" },
+  "redis": { "uri": "redis://127.0.0.1:6379" },
+  "jwt": { "secret": "dev-only-secret-please-change", "expiresIn": "1h" }
+}

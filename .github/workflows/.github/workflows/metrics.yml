@@ -1,0 +1,42 @@
+name: Metrics scrape
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  metrics-scrape:
+    runs-on: ubuntu-latest
+    services:
+      mongo:
+        image: mongo:7
+        ports: ['27017:27017']
+      redis:
+        image: redis:7
+        ports: ['6379:6379']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20', cache: 'pnpm' }
+      - run: npm i -g pnpm@9
+      - run: pnpm install --frozen-lockfile
+      - name: Start server
+        env:
+          MONGO_URL: mongodb://localhost:27017/testdb
+          REDIS_URL: redis://localhost:6379
+        run: |
+          node server/index.js & echo $! > server.pid
+          sleep 2
+      - name: Warm up and scrape
+        run: |
+          curl -sSf http://127.0.0.1:3000/healthz || true
+          curl -sSf http://127.0.0.1:3000/metrics | tee metrics.txt
+          grep -E "http_requests_total|http_request_duration_seconds|message_saved_total|replay_rejected_total" metrics.txt
+      - name: Upload metrics sample
+        uses: actions/upload-artifact@v4
+        with:
+          name: metrics-exposition
+          path: metrics.txt
+      - name: Stop
+        if: always()
+        run: kill $(cat server.pid) || true

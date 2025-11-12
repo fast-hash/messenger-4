@@ -1,0 +1,53 @@
+{
+  "name": "messenger-monorepo",
+  "private": true,
+  "workspaces": [
+    "client",
+    "server"
+  ],
+  "scripts": {
+    "build": "npm -w client run build && (npm -w server run build || echo 'server: build script not defined')",
+    "test": "node --test",
+    "lint": "cross-env ESLINT_USE_FLAT_CONFIG=false eslint .",
+    "test:crypto": "node --test test/crypto",
+    "test:server:cov": "c8 --reporter=text --reporter=lcov node --test server/test",
+    "test:client:cov": "c8 --reporter=text --reporter=lcov node --test client/test",
+    "verify:client": "npm -w client run build && npm -w client test",
+    "verify:server": "npm -w server test && npm -w server run lint",
+    "verify:ciphertext": "node scripts/verify-ciphertext.mjs",
+    "verify:e2e": "npx playwright install --with-deps && npm -w client run e2e",
+    "verify:db": "node scripts/verify-db.mjs",
+    "verify:load": "artillery run load/basic.yml",
+    "verify:replay": "node --test server/test/replay.test.js",
+    "verify:sockets": "node --test server/test/socket.auth.test.js",
+    "verify:all": "npm run verify:client && npm run verify:server && npm run verify:ciphertext && npm run verify:e2e && npm run verify:db && npm run verify:load",
+    "sbom": "cyclonedx-npm --fail-on-error --output-format json --output-file sbom.json",
+    "lint:fix": "cross-env ESLINT_USE_FLAT_CONFIG=false eslint . --fix",
+    "format": "prettier -w .",
+    "prepare": "husky install",
+    "audit:ci": "npm audit --audit-level=high",
+    "secrets:install": "git secrets --install && git secrets --register-aws",
+    "secrets:scan": "git secrets --scan",
+    "slides:dev": "marp -ps slides/deck.md -o slides/deck.html",
+    "slides:pdf": "marp slides/deck.md -o slides/deck.pdf"
+  },
+  "dependencies": {
+    "jsonwebtoken": "^9.0.2"
+  },
+  "devDependencies": {
+    "@marp-team/marp-cli": "^3.4.0",
+    "@noble/curves": "^1.6.0",
+    "@noble/hashes": "^1.4.0",
+    "artillery": "^2.0.11",
+    "c8": "^10.1.3",
+    "cross-env": "^7.0.3",
+    "eslint": "^9.12.0",
+    "eslint-plugin-import": "^2.31.0",
+    "eslint-plugin-security": "^3.0.1",
+    "fake-indexeddb": "5",
+    "husky": "^9.1.3",
+    "lint-staged": "^15.2.10",
+    "prettier": "^3.3.3",
+    "socket.io-client": "4.7.5"
+  }
+}

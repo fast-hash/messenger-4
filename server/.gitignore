@@ -1,0 +1,11 @@
+# Node.js
+node_modules/
+npm-debug.log
+
+# Резервные копии IDE
+*.iml
+.idea/
+.vscode/
+
+# Системные
+.DS_Store
