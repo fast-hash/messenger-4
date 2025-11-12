@@ -42,7 +42,7 @@
     "jsonwebtoken": "^9.0.2"
   },
   "devDependencies": {
-    "@marp-team/marp-cli": "^3.4.0",
+    "@marp-team/marp-cli": "^4.2.3",
     "@noble/curves": "^1.6.0",
     "@noble/hashes": "^1.4.0",
     "artillery": "^2.0.11",
