@@ -16,7 +16,7 @@
     "jwt-decode": "^4.0.0",
     "libsignal-protocol": "file:src/crypto/libsignal-protocol",
     "node-forge": "^1.3.1",
-    "react": "18.3.1",
+    "react": "19.2.0",
     "react-dom": "18.3.1",
     "react-router-dom": "^6.22.1",
     "socket.io-client": "^4.7.5"
